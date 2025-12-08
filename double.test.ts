@@ -4,8 +4,9 @@ import { LiteSVM } from "litesvm"
 test("doubling count",()=>{
     const svm=new LiteSVM();
     const contractKeypair=Keypair.generate();
-    svm.addProgramFromFile(contractKeypair.publicKey,'./double.so')
+    svm.addProgramFromFile(contractKeypair.publicKey,'folder/double.so')
     const payer=Keypair.generate();
+    svm.airdrop(payer.publicKey, BigInt(1_000_000_000)); // Airdrop 1 SOL to payer
     const dataAccount=Keypair.generate();
     const ix=[
         SystemProgram.createAccount({
