@@ -3,7 +3,7 @@ import {test,expect} from "bun:test";
 import { LiteSVM } from "litesvm";
 test("invoking Double via cpi",()=>{
   //deploy cpi + double contract on chain
-  const svm = LiteSVM.default();
+  const svm=new LiteSVM();
   const cpiKeypair=PublicKey.unique();
   const doubleKeypair=PublicKey.unique();
   svm.addProgramFromFile(cpiKeypair,'folder/cpi.so');
@@ -22,7 +22,6 @@ test("invoking Double via cpi",()=>{
         keys:[
           {pubkey:data_acc.publicKey,isSigner:false,isWritable:true},
           {pubkey:doubleKeypair,isSigner:false,isWritable:false},
-          
         ],
         programId:cpiKeypair,
         data:Buffer.from("")
@@ -34,7 +33,6 @@ test("invoking Double via cpi",()=>{
     tx.add(ix);
     tx.sign(userKeypair);
     const res=svm.sendTransaction(tx);
-    console.log(res.toString())
     svm.expireBlockhash();
   }
   double_viaCPI();
@@ -43,7 +41,6 @@ test("invoking Double via cpi",()=>{
   double_viaCPI();
   //check
   const data_account=svm.getAccount(data_acc.publicKey);
-  console.log(data_account?.data)
   expect(data_account?.data[0]).toBe(8);
   expect(data_account?.data[1]).toBe(0);
   expect(data_account?.data[2]).toBe(0);
