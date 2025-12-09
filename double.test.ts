@@ -1,28 +1,67 @@
-import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
-import {test,expect} from "bun:test"
-import { LiteSVM } from "litesvm"
-test("doubling count",()=>{
-    const svm=new LiteSVM();
-    const contractKeypair=Keypair.generate();
-    svm.addProgramFromFile(contractKeypair.publicKey,'folder/double.so')
-    const payer=Keypair.generate();
-    const dataAccount=Keypair.generate();
-    const ix=[
-        SystemProgram.createAccount({
-            fromPubkey: payer.publicKey,
-            newAccountPubkey: dataAccount.publicKey,
-            lamports: Number(svm.minimumBalanceForRentExemption(BigInt(4))),//sol needed for 4 bytes storage
-            space: 4 , //as count:u32 = 32 bits = 4 bytes
-            programId: contractKeypair.publicKey
-        })
-    ]
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import {test,expect} from "bun:test";
+import { LiteSVM } from "litesvm";
+test("invoking Double via cpi",()=>{
+  //deploy cpi + double contract on chain
+  const svm=new LiteSVM();
+  const cpiKeypair=Keypair.generate();
+  const doubleKeypair=Keypair.generate();
+  svm.addProgramFromFile(cpiKeypair.publicKey,'folder/cpi.so');
+  svm.addProgramFromFile(doubleKeypair.publicKey,'folder/double.so');
+  
+  //create user wallet + airdrop
+  const userKeypair=Keypair.generate();
+  svm.airdrop(userKeypair.publicKey,BigInt(LAMPORTS_PER_SOL));
+  //create data acc
+  const data_acc=Keypair.generate();
+  create_data_acc(userKeypair,data_acc,svm,doubleKeypair);//doubleKeypair as owner of dataAcc
+
+  //sending cpi contract instruction
+  function double_viaCPI(){
+    const ix=new TransactionInstruction({
+        keys:[
+          {pubkey:data_acc.publicKey,isSigner:false,isWritable:true},
+          {pubkey:doubleKeypair.publicKey,isSigner:false,isWritable:false}
+        ],
+        programId:cpiKeypair.publicKey,
+        data:Buffer.from("")
+      })
+    
     const tx=new Transaction();
-    tx.feePayer=payer.publicKey;
+    tx.feePayer=userKeypair.publicKey;
     tx.recentBlockhash=svm.latestBlockhash();
-    tx.add(...ix);
-    tx.sign(payer,dataAccount);
+    tx.add(ix);
+    tx.sign(userKeypair);
     svm.sendTransaction(tx);
-    const bal_after=svm.getBalance(dataAccount.publicKey);
-    expect(bal_after).toBe(svm.minimumBalanceForRentExemption(BigInt(4)));
-    //bal of dataacc must be same as rentSol
+    svm.expireBlockhash();
+  }
+  double_viaCPI();
+  double_viaCPI();
+  double_viaCPI();
+  double_viaCPI();
+  //check
+  const data_account=svm.getAccount(data_acc.publicKey);
+  console.log(data_account?.data)
+  expect(data_account?.data[0]).toBe(8);
+  expect(data_account?.data[1]).toBe(0);
+  expect(data_account?.data[2]).toBe(0);
+  expect(data_account?.data[3]).toBe(0);
 })
+
+function create_data_acc(payer:Keypair,dataAccount:Keypair,svm:LiteSVM,contractKeypair:Keypair){
+  const ix=[
+    SystemProgram.createAccount({
+        fromPubkey: payer.publicKey,
+        newAccountPubkey: dataAccount.publicKey,
+        lamports: Number(svm.minimumBalanceForRentExemption(BigInt(4))),//sol needed for 4 bytes storage
+        space: 4 , //as count:u32 = 32 bits = 4 bytes
+        programId: contractKeypair.publicKey
+    })
+  ]
+  const tx=new Transaction();
+  tx.feePayer=payer.publicKey;
+  tx.recentBlockhash=svm.latestBlockhash();
+  tx.add(...ix);
+  tx.sign(payer,dataAccount);
+  svm.sendTransaction(tx);
+}
