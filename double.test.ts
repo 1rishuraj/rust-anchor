@@ -1,13 +1,13 @@
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 import {test,expect} from "bun:test";
 import { LiteSVM } from "litesvm";
 test("invoking Double via cpi",()=>{
   //deploy cpi + double contract on chain
   const svm=new LiteSVM();
-  const cpiKeypair=Keypair.generate();
-  const doubleKeypair=Keypair.generate();
-  svm.addProgramFromFile(cpiKeypair.publicKey,'folder/cpi.so');
-  svm.addProgramFromFile(doubleKeypair.publicKey,'folder/double.so');
+  const cpiKeypair=PublicKey.unique();
+  const doubleKeypair=PublicKey.unique();
+  svm.addProgramFromFile(cpiKeypair,'folder/cpi.so');
+  svm.addProgramFromFile(doubleKeypair,'folder/double.so');
   
   //create user wallet + airdrop
   const userKeypair=Keypair.generate();
@@ -21,10 +21,10 @@ test("invoking Double via cpi",()=>{
     const ix=new TransactionInstruction({
         keys:[
           {pubkey:data_acc.publicKey,isSigner:false,isWritable:true},
-          {pubkey:doubleKeypair.publicKey,isSigner:false,isWritable:false},
+          {pubkey:doubleKeypair,isSigner:false,isWritable:false},
           
         ],
-        programId:cpiKeypair.publicKey,
+        programId:cpiKeypair,
         data:Buffer.from("")
       })
     
@@ -33,7 +33,8 @@ test("invoking Double via cpi",()=>{
     tx.recentBlockhash=svm.latestBlockhash();
     tx.add(ix);
     tx.sign(userKeypair);
-    svm.sendTransaction(tx);
+    const res=svm.sendTransaction(tx);
+    console.log(res.toString())
     svm.expireBlockhash();
   }
   double_viaCPI();
@@ -49,14 +50,14 @@ test("invoking Double via cpi",()=>{
   expect(data_account?.data[3]).toBe(0);
 })
 
-function create_data_acc(payer:Keypair,dataAccount:Keypair,svm:LiteSVM,contractKeypair:Keypair){
+function create_data_acc(payer:Keypair,dataAccount:Keypair,svm:LiteSVM,contractKeypair:PublicKey){
   const ix=[
     SystemProgram.createAccount({
         fromPubkey: payer.publicKey,
         newAccountPubkey: dataAccount.publicKey,
         lamports: Number(svm.minimumBalanceForRentExemption(BigInt(4))),//sol needed for 4 bytes storage
         space: 4 , //as count:u32 = 32 bits = 4 bytes
-        programId: contractKeypair.publicKey
+        programId: contractKeypair
     })
   ]
   const tx=new Transaction();
