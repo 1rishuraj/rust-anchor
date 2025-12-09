@@ -21,7 +21,8 @@ test("invoking Double via cpi",()=>{
     const ix=new TransactionInstruction({
         keys:[
           {pubkey:data_acc.publicKey,isSigner:false,isWritable:true},
-          {pubkey:doubleKeypair.publicKey,isSigner:false,isWritable:false}
+          {pubkey:doubleKeypair.publicKey,isSigner:false,isWritable:false},
+          
         ],
         programId:cpiKeypair.publicKey,
         data:Buffer.from("")
