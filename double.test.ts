@@ -3,7 +3,7 @@ import {test,expect} from "bun:test";
 import { LiteSVM } from "litesvm";
 test("invoking Double via cpi",()=>{
   //deploy cpi + double contract on chain
-  const svm=new LiteSVM();
+  const svm = LiteSVM.default();
   const cpiKeypair=PublicKey.unique();
   const doubleKeypair=PublicKey.unique();
   svm.addProgramFromFile(cpiKeypair,'folder/cpi.so');
