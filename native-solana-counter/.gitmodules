@@ -1,0 +1,6 @@
+[submodule "solana-contract"]
+	path = solana-contract
+	url = https://github.com/1rishuraj/counter-contract.git
+[submodule "solana-contract-tests"]
+	path = solana-contract-tests
+	url = https://github.com/1rishuraj/counter-contract-test.git

@@ -1,0 +1,17 @@
+{
+  "name": "solana-contract-client",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "borsh": "0.7.0",
+    "bs58": "^6.0.0"
+  }
+}
