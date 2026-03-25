@@ -6,13 +6,13 @@
 
 /// Custom string splitter iterator.
 #[derive(Debug)]
-pub struct StrSplit<'a> {
-    remainder: Option<&'a str>,
-    delimiter: &'a str,
+pub struct StrSplit<'haystack, 'delimiter> {
+    remainder: Option<&'haystack str>,
+    delimiter: &'delimiter str,
 }
 
-impl<'a> StrSplit<'a> {
-    pub fn new(haystack: &'a str, delimiter: &'a str) -> Self {
+impl<'haystack, 'delimiter> StrSplit<'haystack, 'delimiter> {
+    pub fn new(haystack: &'haystack str, delimiter: &'delimiter str) -> Self {
         Self {
             remainder: Some(haystack),
             delimiter,
@@ -20,14 +20,19 @@ impl<'a> StrSplit<'a> {
     }
 }
 
-impl<'a> Iterator for StrSplit<'a> {
-    type Item =  &'a str;
+pub fn untilchar<'haystack, 'delimiter>(haystack: &'haystack str, delimiter: &'delimiter str) -> &'haystack str{
+        let delim = format!("{}", delimiter);
+        StrSplit::new(haystack, &delim).next().expect("msg")
+}
+
+impl<'haystack, 'delimiter> Iterator for StrSplit<'haystack, 'delimiter> {
+    type Item =  &'haystack str;
 
     /// Advances the iterator and returns the next substring.
     fn next(&mut self) -> Option<Self::Item> {
         let remaining = self.remainder.as_mut()?;
-        if let Some(delimeter_idx) = remaining.find(" "){
-            let until_delim:&'a str = &remaining[..delimeter_idx];
+        if let Some(delimeter_idx) = remaining.find(self.delimiter){
+            let until_delim = &remaining[..delimeter_idx];
             self.remainder = Some(&remaining[delimeter_idx+self.delimiter.len()..]);
             Some(until_delim)
         }else{
@@ -50,4 +55,12 @@ fn it_works2() {
     let letters = StrSplit::new(haystack, " ").collect::<Vec<_>>();
     let letters2: Vec<&str> = haystack.split(" ").collect();
     assert_eq!(letters, letters2);
+}
+
+#[test]
+fn it_works3() {
+    let haystack = "hello world";
+    let letters = untilchar(haystack, "o");
+   
+    assert_eq!(letters, "hell");
 }
