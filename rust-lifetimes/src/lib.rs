@@ -2,7 +2,7 @@
 //! Custom string splitter iterator that mimics `str::split()` behavior.
 //! Provides an iterator over substrings separated by a given delimiter.
 
-#![warn(missing_debug_implementations, rust_2018_idioms, missing_docs)]
+#![warn(rust_2018_idioms)]
 
 /// Custom string splitter iterator.
 #[derive(Debug)]
@@ -17,6 +17,19 @@ pub trait Delimiter {
     //return range of delimeter as char can also have range of indices
 }
 
+impl Delimiter for &str {
+    //self is delimiter and s is haystack
+    fn find_next(&self, s: &str) -> Option<(usize, usize)> {
+        s.find(self).map(|start| (start, start + self.len()))
+    }
+}
+
+impl Delimiter for char {
+    //self is delimiter and s is haystack
+    fn find_next(&self, s: &str) -> Option<(usize, usize)> {
+        s.char_indices().find(|(_,c)| c==self).map(|(idx,c)| (idx, idx+c.len_utf8()))
+    }
+}
 
 impl<'haystack, D> StrSplit<'haystack, D> {
     pub fn new(haystack: &'haystack str, delimiter: D) -> Self {
@@ -55,19 +68,7 @@ where
 }
 
 
-impl Delimiter for &str {
-    //self is delimiter and s is haystack
-    fn find_next(&self, s: &str) -> Option<(usize, usize)> {
-        s.find(self).map(|start| (start, start + self.len()))
-    }
-}
 
-impl Delimiter for char {
-    //self is delimiter and s is haystack
-    fn find_next(&self, s: &str) -> Option<(usize, usize)> {
-        s.char_indices().find(|(_,c)| c==self).map(|(idx,c)| (idx, idx+c.len_utf8()))
-    }
-}
 
 #[test]
 fn it_works() {
